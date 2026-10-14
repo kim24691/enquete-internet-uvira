@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Observatoire Télécom Uvira - Enquête Qualité & Connectivité</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Vue.js 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        accent: {
+                            500: '#f97316',
+                            600: '#ea580c',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+        .star-rating i {
+            transition: all 0.2s ease;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+    <div id="app" class="flex-grow flex flex-col">
+
+        <!-- HEADER / NAVIGATION -->
+        <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16 sm:h-20">
+                    <!-- Logo -->
+                    <div class="flex items-center space-x-3 cursor-pointer" @click="currentTab = 'home'">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-tr from-brand-700 to-brand-500 flex items-center justify-center text-white shadow-lg shadow-brand-500/20">
+                            <i class="fa-solid fa-wifi text-lg sm:text-xl"></i>
+                        </div>
+                        <div>
+                            <span class="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight block leading-tight">Observatoire Télécom</span>
+                            <span class="text-xs font-semibold text-brand-600 tracking-wider uppercase">Ville d'Uvira • RDC</span>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Desktop -->
+                    <nav class="hidden md:flex items-center space-x-1 lg:space-x-2">
+                        <button @click="currentTab = 'home'" :class="['px-4 py-2 rounded-lg text-sm font-semibold transition-all', currentTab === 'home' ? 'text-brand-600 bg-brand-50' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100']">
+                            <i class="fa-solid fa-house mr-2"></i>Accueil
+                        </button>
+                        <button @click="currentTab = 'survey'" :class="['px-4 py-2 rounded-lg text-sm font-semibold transition-all', currentTab === 'survey' ? 'text-brand-600 bg-brand-50' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100']">
+                            <i class="fa-solid fa-clipboard-question mr-2"></i>Enquête
+                        </button>
+                        <button @click="currentTab = 'stats'" :class="['px-4 py-2 rounded-lg text-sm font-semibold transition-all', currentTab === 'stats' ? 'text-brand-600 bg-brand-50' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100']">
+                            <i class="fa-solid fa-chart-pie mr-2"></i>Statistiques
+                        </button>
+                        <button @click="currentTab = 'claims'" :class="['px-4 py-2 rounded-lg text-sm font-semibold transition-all', currentTab === 'claims' ? 'text-brand-600 bg-brand-50' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100']">
+                            <i class="fa-solid fa-bullhorn mr-2"></i>Revendications
+                        </button>
+                    </nav>
+
+                    <!-- CTA Button -->
+                    <div class="hidden sm:flex items-center">
+                        <button @click="startSurvey" class="bg-gradient-to-r from-accent-500 to-amber-600 hover:from-accent-600 hover:to-amber-700 text-white font-bold px-5 py-2.5 rounded-xl text-sm shadow-md shadow-accent-500/20 hover:shadow-lg transition-all flex items-center gap-2">
+                            <span>Participer</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+
+                    <!-- Mobile Menu Button -->
+                    <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100">
+                        <i :class="['text-xl fa-solid', mobileMenuOpen ? 'fa-xmark' : 'fa-bars']"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile Navigation Menu -->
+            <div v-if="mobileMenuOpen" class="md:hidden border-b border-slate-200 bg-white px-4 pt-2 pb-4 space-y-2 shadow-xl">
+                <button @click="currentTab = 'home'; mobileMenuOpen = false" class="w-full text-left px-4 py-3 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-3">
+                    <i class="fa-solid fa-house text-brand-600 w-5"></i>Accueil
+                </button>
+                <button @click="currentTab = 'survey'; mobileMenuOpen = false" class="w-full text-left px-4 py-3 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-3">
+                    <i class="fa-solid fa-clipboard-question text-brand-600 w-5"></i>Répondre à l'enquête
+                </button>
+                <button @click="currentTab = 'stats'; mobileMenuOpen = false" class="w-full text-left px-4 py-3 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-3">
+                    <i class="fa-solid fa-chart-pie text-brand-600 w-5"></i>Statistiques en direct
+                </button>
+                <button @click="currentTab = 'claims'; mobileMenuOpen = false" class="w-full text-left px-4 py-3 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-3">
+                    <i class="fa-solid fa-bullhorn text-brand-600 w-5"></i>Revendications
+                </button>
+                <button @click="startSurvey(); mobileMenuOpen = false" class="w-full mt-2 bg-accent-500 text-white font-bold py-3 rounded-xl text-center text-sm shadow-md">
+                    <i class="fa-solid fa-pen mr-2"></i>Commencer l'enquête
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT -->
+        <main class="flex-grow">
+            
+            <!-- SECTION ACCUEIL (HOME) -->
+            <section v-if="currentTab === 'home'" class="space-y-12 pb-16">
+                <!-- Hero Banner -->
+                <div class="relative overflow-hidden bg-gradient-to-b from-brand-900 via-brand-800 to-slate-900 text-white py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
+                    <!-- Decorative Background Elements -->
+                    <div class="absolute inset-0 opacity-10 pointer-events-none">
+                        <div class="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-brand-500 blur-3xl"></div>
+                        <div class="absolute top-1/2 right-0 w-80 h-80 rounded-full bg-accent-500 blur-3xl"></div>
+                    </div>
+
+                    <div class="max-w-5xl mx-auto text-center relative z-10 space-y-6">
+                        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs sm:text-sm font-medium text-brand-100">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            Initiative citoyenne pour la ville d'Uvira
+                        </div>
+                        <h1 class="text-3xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-tight sm:leading-none">
+                            Exigeons une meilleure <span class="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-amber-300">connexion internet</span> à Uvira !
+                        </h1>
+                        <p class="text-base sm:text-xl text-slate-300 max-w-3xl mx-auto font-normal leading-relaxed">
+                            Airtel, Vodacom, Orange, Africell, CANALBOX, Starlink... Évaluez la qualité, l'accessibilité et les coûts dans votre quartier pour faire entendre nos revendications légitimes.
+                        </p>
+                        <div class="pt-4 flex flex-col sm:flex-row justify-center gap-4">
+                            <button @click="startSurvey" class="bg-gradient-to-r from-accent-500 to-amber-500 hover:from-accent-600 hover:to-amber-600 text-white text-base sm:text-lg font-bold px-8 py-4 rounded-xl shadow-xl shadow-accent-500/30 hover:scale-105 transition-all flex items-center justify-center gap-3">
+                                <i class="fa-solid fa-paper-plane"></i>
+                                <span>Participer à l'enquête maintenant</span>
+                            </button>
+                            <button @click="currentTab = 'stats'" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 text-base sm:text-lg font-semibold px-6 py-4 rounded-xl backdrop-blur-md transition-all flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-chart-line"></i>
+                                <span>Voir les résultats en direct</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- KPI Quick Stats -->
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 relative z-20">
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="glass-card p-5 sm:p-6 rounded-2xl shadow-lg border border-slate-100 text-center space-y-1">
+                            <div class="text-3xl sm:text-4xl font-black text-brand-600">{{ totalResponses }}</div>
+                            <div class="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider">Citoyens Participants</div>
+                        </div>
+                        <div class="glass-card p-5 sm:p-6 rounded-2xl shadow-lg border border-slate-100 text-center space-y-1">
+                            <div class="text-3xl sm:text-4xl font-black text-amber-500">{{ averageSatisfaction }}/5</div>
+                            <div class="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider">Note Moyenne Vitesse</div>
+                        </div>
+                        <div class="glass-card p-5 sm:p-6 rounded-2xl shadow-lg border border-slate-100 text-center space-y-1">
+                            <div class="text-3xl sm:text-4xl font-black text-rose-500">{{ dailyOutagePercent }}%</div>
+                            <div class="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider">Coupures Quotidiennes</div>
+                        </div>
+                        <div class="glass-card p-5 sm:p-6 rounded-2xl shadow-lg border border-slate-100 text-center space-y-1">
+                            <div class="text-3xl sm:text-4xl font-black text-emerald-600">14/14</div>
+                            <div class="text-xs sm:text-sm font-semibold text-slate-500 uppercase tracking-wider">Quartiers Couverts</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Why this Survey Section -->
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <div class="text-center max-w-3xl mx-auto space-y-3 mb-12">
+                        <h2 class="text-2xl sm:text-3xl font-bold text-slate-900">Pourquoi cette initiative à Uvira ?</h2>
+                        <p class="text-slate-600 text-sm sm:text-base">Notre objectif est de collecter des données fiables auprès de la population pour exiger des améliorations concrètes aux régulateurs et aux opérateurs.</p>
+                    </div>
+
+                    <div class="grid md:grid-cols-3 gap-8">
+                        <div class="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-4 hover:shadow-md transition-all">
+                            <div class="w-12 h-12 bg-blue-100 text-brand-600 rounded-xl flex items-center justify-center text-xl font-bold">
+                                <i class="fa-solid fa-map-location-dot"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-900">Cartographier la couverture</h3>
+                            <p class="text-slate-600 text-sm leading-relaxed">Identifier les zones d'Uvira (Kalundu, Mulongwe, Kavimvira) à faible signal ou sans connexion stable.</p>
+                        </div>
+
+                        <div class="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-4 hover:shadow-md transition-all">
+                            <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center text-xl font-bold">
+                                <i class="fa-solid fa-coins"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-900">Dénoncer les coûts excessifs</h3>
+                            <p class="text-slate-600 text-sm leading-relaxed">Analyser la cohérence entre le prix payé par les citoyens et la vitesse/qualité de service réelle fournie.</p>
+                        </div>
+
+                        <div class="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-4 hover:shadow-md transition-all">
+                            <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-xl flex items-center justify-center text-xl font-bold">
+                                <i class="fa-solid fa-gavel"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-900">Porter les revendications</h3>
+                            <p class="text-slate-600 text-sm leading-relaxed">Créer un rapport d'évaluation indépendant transmis aux décideurs pour exiger un changement rapide.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Communes and Neighborhoods Info Grid -->
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-slate-100/70 rounded-3xl">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold text-slate-900">Les 14 Quartiers représentés</h2>
+                            <p class="text-slate-600 text-sm">Organisés par commune dans la ville d'Uvira</p>
+                        </div>
+                        <button @click="startSurvey" class="text-brand-600 font-bold hover:underline flex items-center gap-2 text-sm">
+                            Évaluer votre quartier <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+
+                    <div class="grid md:grid-cols-3 gap-6">
+                        <div v-for="(quartiers, commune) in communesData" :key="commune" class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                                <h3 class="font-bold text-slate-900 text-lg">Commune de {{ commune }}</h3>
+                                <span class="bg-brand-50 text-brand-700 font-extrabold text-xs px-2.5 py-1 rounded-full">
+                                    {{ quartiers.length }} quartiers
+                                </span>
+                            </div>
+                            <ul class="space-y-2">
+                                <li v-for="q in quartiers" :key="q.id" class="flex items-center text-sm text-slate-600">
+                                    <i class="fa-solid fa-location-dot text-brand-500 mr-2 text-xs"></i>
+                                    <span class="font-semibold text-slate-800">{{ q.name }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION ENQUÊTE (SURVEY FORM) -->
+            <section v-if="currentTab === 'survey'" class="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+                
+                <div class="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+                    
+                    <!-- Progress Bar Header -->
+                    <div class="bg-slate-900 text-white p-6 sm:p-8">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <span class="text-xs font-bold uppercase tracking-wider text-accent-500">Formulaire citoyen</span>
+                                <h2 class="text-xl sm:text-2xl font-bold">Étape {{ surveyStep }} sur 4 : {{ stepTitles[surveyStep - 1] }}</h2>
+                            </div>
+                            <span class="bg-white/10 px-3 py-1 rounded-full text-xs font-bold">{{ Math.round((surveyStep / 4) * 100) }}% complété</span>
+                        </div>
+                        
+                        <!-- Progress Bar Track -->
+                        <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+                            <div class="bg-gradient-to-r from-brand-500 to-accent-500 h-full transition-all duration-300 ease-out" :style="{ width: (surveyStep / 4) * 100 + '%' }"></div>
+                        </div>
+
+                        <!-- Step Tabs Indicators -->
+                        <div class="grid grid-cols-4 gap-2 mt-6 text-center text-xs font-medium">
+                            <button @click="goToStep(1)" :class="[surveyStep >= 1 ? 'text-white' : 'text-slate-500']" class="hover:underline">1. Profil & Zone</button>
+                            <button @click="goToStep(2)" :class="[surveyStep >= 2 ? 'text-white' : 'text-slate-500']" class="hover:underline">2. Qualité</button>
+                            <button @click="goToStep(3)" :class="[surveyStep >= 3 ? 'text-white' : 'text-slate-500']" class="hover:underline">3. Coûts</button>
+                            <button @click="goToStep(4)" :class="[surveyStep >= 4 ? 'text-white' : 'text-slate-500']" class="hover:underline">4. Revendications</button>
+                        </div>
+                    </div>
+
+                    <!-- Form Body -->
+                    <div class="p-6 sm:p-10 space-y-8">
+                        
+                        <!-- ÉTAPE 1 : PROFIL & LOCALISATION -->
+                        <div v-if="surveyStep === 1" class="space-y-6">
+                            <div class="border-b border-slate-100 pb-4">
+                                <h3 class="text-lg font-bold text-slate-900">Localisation & Opérateurs</h3>
+                                <p class="text-xs sm:text-sm text-slate-500">Veuillez sélectionner votre secteur à Uvira et vos connexions.</p>
+                            </div>
+
+                            <!-- Selection Commune & Quartier -->
+                            <div class="grid sm:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">1. Choisissez votre Commune *</label>
+                                    <select v-model="formData.commune" @change="onCommuneChange" class="w-full p-3.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
+                                        <option value="">-- Sélectionnez la commune --</option>
+                                        <option v-for="(quartiers, communeName) in communesData" :key="communeName" :value="communeName">
+                                            Commune de {{ communeName }}
+                                        </option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-bold text-slate-700 mb-2">2. Choisissez votre Quartier *</label>
+                                    <select v-model="formData.quartier" :disabled="!formData.commune" class="w-full p-3.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium disabled:opacity-50">
+                                        <option value="">-- Sélectionnez le quartier --</option>
+                                        <option v-for="q in availableQuartiers" :key="q.id" :value="q.name">
+                                            {{ q.name }} ({{ formData.commune }})
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Opérateurs principaux -->
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-2">3. Opérateur(s) principal(aux) utilisé(s) à Uvira *</label>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                    <label v-for="op in operatorsList" :key="op" class="flex items-center p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition-all" :class="{'border-brand-500 bg-brand-50/50': formData.operators.includes(op)}">
+                                        <input type="checkbox" :value="op" v-model="formData.operators" class="w-4 h-4 text-brand-600 rounded focus:ring-brand-500">
+                                        <span class="ml-2.5 text-sm font-semibold text-slate-800">{{ op }}</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Profil citoyen -->
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-2">4. Votre Profil Citoyen</label>
+                                <select v-model="formData.profile" class="w-full p-3.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
+                                    <option value="Étudiant">Étudiant / Élève</option>
+                                    <option value="Commerçant">Commerçant / Entrepreneur local</option>
+                                    <option value="Fonctionnaire">Fonctionnaire / Agent de l'État</option>
+                                    <option value="Employé">Employé secteur privé / Ong</option>
+                                    <option value="Particulier">Particulier / Indépendant</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- ÉTAPE 2 : QUALITÉ & ACCESSIBILITÉ -->
+                        <div v-if="surveyStep === 2" class="space-y-6">
+                            <div class="border-b border-slate-100 pb-4">
+                                <h3 class="text-lg font-bold text-slate-900">Performance & Stabilité</h3>
+                                <p class="text-xs sm:text-sm text-slate-500">Évaluez la qualité réelle du réseau que vous captez au quotidien.</p>
+                            </div>
+
+                            <!-- Type de réseau capté -->
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-2">1. Type de réseau capté le plus souvent</label>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    <button type="button" v-for="net in networkTypes" :key="net" @click="formData.networkType = net" :class="['py-3 px-4 rounded-xl text-sm font-bold border transition-all', formData.networkType === net ? 'bg-brand-600 text-white border-brand-600' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100']">
+                                        {{ net }}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Fréquence des coupures -->
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-2">2. Fréquence des coupures / instabilités du réseau</label>
+                                <select v-model="formData.outageFrequency" class="w-full p-3.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
+                                    <option value="Plusieurs fois par jour">Très fréquentes (Plusieurs fois par jour)</option>
+                                    <option value="Une fois par jour">Régulières (Environ une fois par jour)</option>
+                                    <option value="Hebdomadaire">Occasionnelles (Quelques fois par semaine)</option>
+                                    <option value="Rarement">Rares (Connexion stable en général)</option>
+                                </select>
+                            </div>
+
+                            <!-- Ratings (Étoiles) -->
+                            <div class="space-y-4 pt-2">
+                                <h4 class="font-bold text-sm text-slate-800">3. Évaluation de la vitesse (1 = Très mauvais, 5 = Excellent)</h4>
+
+                                <!-- Rating 1: Speed -->
+                                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                                    <span class="text-sm font-semibold text-slate-700">Vitesse chargement des pages</span>
+                                    <div class="flex gap-1 text-lg text-amber-400 star-rating">
+                                        <i v-for="star in 5" :key="star" @click="formData.ratings.pageLoading = star" :class="[star <= formData.ratings.pageLoading ? 'fa-solid fa-star' : 'fa-regular fa-star text-slate-300']" class="cursor-pointer hover:scale-110"></i>
+                                    </div>
+                                </div>
+
+                                <!-- Rating 2: Streaming -->
+                                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                                    <span class="text-sm font-semibold text-slate-700">Fluidité streaming (YouTube, TikTok...)</span>
+                                    <div class="flex gap-1 text-lg text-amber-400 star-rating">
+                                        <i v-for="star in 5" :key="star" @click="formData.ratings.streaming = star" :class="[star <= formData.ratings.streaming ? 'fa-solid fa-star' : 'fa-regular fa-star text-slate-300']" class="cursor-pointer hover:scale-110"></i>
+                                    </div>
+                                </div>
+
+                                <!-- Rating 3: Calls -->
+                                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                                    <span class="text-sm font-semibold text-slate-700">Appels vidéo & WhatsApp</span>
+                                    <div class="flex gap-1 text-lg text-amber-400 star-rating">
+                                        <i v-for="star in 5" :key="star" @click="formData.ratings.calls = star" :class="[star <= formData.ratings.calls ? 'fa-solid fa-star' : 'fa-regular fa-star text-slate-300']" class="cursor-pointer hover:scale-110"></i>
+                                    </div>
+                                </div>
+
+                                <!-- Rating 4: Weather -->
+                                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
+                                    <span class="text-sm font-semibold text-slate-700">Stabilité pendant la pluie / intempéries</span>
+                                    <div class="flex gap-1 text-lg text-amber-400 star-rating">
+                                        <i v-for="star in 5" :key="star" @click="formData.ratings.weatherStability = star" :class="[star <= formData.ratings.weatherStability ? 'fa-solid fa-star' : 'fa-regular fa-star text-slate-300']" class="cursor-pointer hover:scale-110"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ÉTAPE 3 : COÛT & POUVOIR D'ACHAT -->
+                        <div v-if="surveyStep === 3" class="space-y-6">
+                            <div class="border-b border-slate-100 pb-4">
+                                <h3 class="text-lg font-bold text-slate-900">Tarification & Budget</h3>
+                                <p class="text-xs sm:text-sm text-slate-500">Combien dépensez-vous pour vos recharges internet à Uvira ?</p>
+                            </div>
+
+                            <!-- Budget mensuel -->
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-2">1. Estimation de vos dépenses internet par mois (en USD $)</label>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    <button type="button" v-for="b in budgetRanges" :key="b" @click="formData.monthlyBudget = b" :class="['py-3 px-3 rounded-xl text-sm font-bold border transition-all text-center', formData.monthlyBudget === b ? 'bg-brand-600 text-white border-brand-600' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100']">
+                                        {{ b }}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Appreciation du tarif -->
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-2">2. Trouvez-vous les tarifs actuels équitables par rapport à la qualité ?</label>
+                                <div class="space-y-2">
+                                    <label v-for="priceOpinion in priceOpinionsList" :key="priceOpinion" class="flex items-center p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50" :class="{'border-brand-500 bg-brand-50/40': formData.priceFairness === priceOpinion}">
+                                        <input type="radio" :value="priceOpinion" v-model="formData.priceFairness" class="w-4 h-4 text-brand-600">
+                                        <span class="ml-3 text-sm font-semibold text-slate-800">{{ priceOpinion }}</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Type de forfaits -->
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-2">3. Quel type de forfaits achetez-vous le plus souvent ?</label>
+                                <select v-model="formData.bundleType" class="w-full p-3.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-brand-500 focus:outline-none font-medium">
+                                    <option value="Forfaits Jour (24h)">Forfaits Jour (24h)</option>
+                                    <option value="Forfaits Semaine">Forfaits Semaine (7 jours)</option>
+                                    <option value="Forfaits Mois">Forfaits Mois (30 jours)</option>
+                                    <option value="Achat Méga/Giga à l'unité">Achat Méga/Giga à l'unité</option>
+                                    <option value="Abonnement Illimité (Wifi/Fibre)">Abonnement Illimité Fixe (Wifi/CANALBOX/Starlink)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- ÉTAPE 4 : REVENDICATIONS & BESOINS -->
+                        <div v-if="surveyStep === 4" class="space-y-6">
+                            <div class="border-b border-slate-100 pb-4">
+                                <h3 class="text-lg font-bold text-slate-900">Vos Revendications pour Uvira</h3>
+                                <p class="text-xs sm:text-sm text-slate-500">Quelles sont vos exigences prioritaires envers les opérateurs et les autorités ?</p>
+                            </div>
+
+                            <!-- Priorities Checkboxes -->
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-3">1. Cochez vos priorités d'amélioration (Choix multiples)</label>
+                                <div class="space-y-2.5">
+                                    <label v-for="claim in claimsList" :key="claim" class="flex items-start p-3.5 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50" :class="{'border-accent-500 bg-amber-50/40': formData.claims.includes(claim)}">
+                                        <input type="checkbox" :value="claim" v-model="formData.claims" class="mt-0.5 w-4 h-4 text-accent-500 rounded">
+                                        <span class="ml-3 text-sm font-medium text-slate-800">{{ claim }}</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Free text message -->
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-2">2. Message spécifique ou plainte personnelle (Optionnel)</label>
+                                <textarea v-model="formData.userMessage" rows="4" placeholder="Ex: Dans le quartier Songo, la 4G tombe dès qu'il pleut..." class="w-full p-4 rounded-xl border border-slate-300 focus:ring-2 focus:ring-brand-500 focus:outline-none text-sm font-medium"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Navigation Buttons -->
+                        <div class="flex items-center justify-between pt-6 border-t border-slate-100">
+                            <button v-if="surveyStep > 1" @click="surveyStep--" type="button" class="px-5 py-2.5 rounded-xl border border-slate-300 font-bold text-slate-600 hover:bg-slate-100 transition-all text-sm">
+                                <i class="fa-solid fa-arrow-left mr-2"></i> Précédent
+                            </button>
+                            <div v-else></div>
+
+                            <button v-if="surveyStep < 4" @click="nextStep" type="button" class="bg-brand-600 hover:bg-brand-700 text-white font-bold px-7 py-3 rounded-xl shadow-md transition-all text-sm flex items-center gap-2">
+                                <span>Suivant</span>
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+
+                            <button v-if="surveyStep === 4" @click="submitSurvey" type="button" class="bg-gradient-to-r from-accent-500 to-amber-600 hover:from-accent-600 hover:to-amber-700 text-white font-extrabold px-8 py-3.5 rounded-xl shadow-lg shadow-accent-500/20 transition-all text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-check-circle text-base"></i>
+                                <span>Soumettre mes réponses</span>
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION STATISTIQUES (DASHBOARD) -->
+            <section v-if="currentTab === 'stats'" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl sm:text-3xl font-bold text-slate-900">Tableau de Bord des Résultats</h2>
+                        <p class="text-slate-600 text-sm">Données collectées en temps réel auprès des citoyens d'Uvira.</p>
+                    </div>
+                    <div class="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-xl border border-slate-200 text-xs font-semibold text-slate-600 shadow-sm">
+                        <i class="fa-solid fa-rotate text-brand-600 animate-spin"></i>
+                        <span>Mise à jour en direct ({{ totalResponses }} enregistrements)</span>
+                    </div>
+                </div>
+
+                <!-- Charts Grid -->
+                <div class="grid lg:grid-cols-2 gap-8">
+                    <!-- Chart 1: Quartiers Participation -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+                            <i class="fa-solid fa-chart-bar text-brand-600"></i>
+                            Participation par Quartier à Uvira
+                        </h3>
+                        <div class="h-64">
+                            <canvas id="chartQuartiers"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Chart 2: Outage Frequency -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                        <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+                            <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
+                            Fréquence des coupures de réseau
+                        </h3>
+                        <div class="h-64 flex items-center justify-center">
+                            <canvas id="chartOutages"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Chart 3: Top Claims -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4 lg:col-span-2">
+                        <h3 class="font-bold text-slate-900 text-base flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-accent-500"></i>
+                            Top des Revendications Citoyennes
+                        </h3>
+                        <div class="h-72">
+                            <canvas id="chartClaims"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION REVENDICATIONS (CLAIMS FEED) -->
+            <section v-if="currentTab === 'claims'" class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+                <div class="text-center max-w-2xl mx-auto space-y-2 mb-8">
+                    <h2 class="text-2xl sm:text-3xl font-bold text-slate-900">La Voix des Habitants d'Uvira</h2>
+                    <p class="text-slate-600 text-sm">Témoignages et messages récents adressés aux opérateurs télécoms.</p>
+                </div>
+
+                <div class="space-y-4">
+                    <div v-for="(item, idx) in recentMessages" :key="idx" class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between text-xs text-slate-500">
+                            <span class="font-bold text-brand-600 bg-brand-50 px-3 py-1 rounded-full">
+                                <i class="fa-solid fa-location-dot mr-1"></i>{{ item.quartier }} ({{ item.commune }})
+                            </span>
+                            <span>{{ item.date }}</span>
+                        </div>
+                        <p class="text-slate-800 font-medium text-sm sm:text-base italic">" {{ item.message }} "</p>
+                        <div class="flex items-center gap-2 text-xs text-slate-500 pt-2 border-t border-slate-100">
+                            <span>Opérateur(s) concerné(s) :</span>
+                            <span class="font-semibold text-slate-700">{{ item.operators.join(', ') }}</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- MODAL DE REMERCIEMENT & PARTAGE -->
+        <div v-if="showSuccessModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+            <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 text-center space-y-6 shadow-2xl border border-slate-100 animate-bounce-in">
+                <div class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-3xl">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+                <div class="space-y-2">
+                    <h3 class="text-2xl font-bold text-slate-900">Aksanti ! Merci pour votre participation !</h3>
+                    <p class="text-slate-600 text-sm">Vos réponses ont été enregistrées avec succès. Elles contribueront à la rédaction du rapport citoyen sur Internet à Uvira.</p>
+                </div>
+
+                <!-- WhatsApp Share Button -->
+                <a :href="whatsappShareUrl" target="_blank" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-3 transition-all text-sm">
+                    <i class="fa-brands fa-whatsapp text-xl"></i>
+                    <span>Partager sur WhatsApp avec un ami d'Uvira</span>
+                </a>
+
+                <button @click="closeModal" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-3 rounded-xl text-sm transition-all">
+                    Fermer et voir les statistiques
+                </button>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <footer class="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center text-white">
+                            <i class="fa-solid fa-wifi"></i>
+                        </div>
+                        <span class="text-white font-bold text-lg">Observatoire Télécom Uvira</span>
+                    </div>
+                    <div class="flex flex-wrap gap-6 text-sm">
+                        <button @click="currentTab = 'home'" class="hover:text-white">Accueil</button>
+                        <button @click="currentTab = 'survey'" class="hover:text-white">Enquête</button>
+                        <button @click="currentTab = 'stats'" class="hover:text-white">Résultats</button>
+                        <button @click="currentTab = 'claims'" class="hover:text-white">Revendications</button>
+                    </div>
+                </div>
+                <div class="text-center text-xs text-slate-500 pt-6 border-t border-slate-800">
+                    <p>© 2026 Observatoire Télécom Uvira - Initiative Citoyenne pour l'amélioration des services numériques en RDC.</p>
+                </div>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- VUE 3 APPLICATION SCRIPT -->
+    <script>
+        const { createApp, ref, computed, watch, onMounted, nextTick } = Vue;
+
+        createApp({
+            setup() {
+                const currentTab = ref('home');
+                const mobileMenuOpen = ref(false);
+                const surveyStep = ref(1);
+                const showSuccessModal = ref(false);
+
+                // EXACT COMMUNES & NEIGHBORHOODS DATA
+                const communesData = {
+                    "Kalundu": [
+                        { id: 1, name: "Kalundu" },
+                        { id: 2, name: "Kilibula" },
+                        { id: 3, name: "Kimanga" },
+                        { id: 4, name: "Kabindula" },
+                        { id: 5, name: "Nyamianda" },
+                        { id: 6, name: "Songo" }
+                    ],
+                    "Mulongwe": [
+                        { id: 7, name: "Mulongwe" },
+                        { id: 8, name: "Rombe I" },
+                        { id: 9, name: "Rombe II" },
+                        { id: 10, name: "Kasenga" },
+                        { id: 11, name: "Kibondwe" },
+                        { id: 12, name: "Kakombe" }
+                    ],
+                    "Kavimvira": [
+                        { id: 13, name: "Kavimvira" },
+                        { id: 14, name: "Rugenge" }
+                    ]
+                };
+
+                const stepTitles = [
+                    "Profil & Localisation",
+                    "Qualité & Accessibilité",
+                    "Coût & Pouvoir d'achat",
+                    "Revendications & Besoins"
+                ];
+
+                const operatorsList = ["Vodacom", "Airtel", "Orange", "Africell", "CANALBOX", "Starlink"];
+                const networkTypes = ["2G", "3G", "4G", "Wifi / Fibre"];
+                const budgetRanges = ["Moins de 5$", "5$ - 15$", "15$ - 30$", "Plus de 30$"];
+                
+                const priceOpinionsList = [
+                    "Extrêmement cher pour la mauvaise qualité offerte",
+                    "Un peu élevé par rapport au service",
+                    "Équitable / Raisonnable",
+                    "Abordable"
+                ];
+
+                const claimsList = [
+                    "Baisse générale du prix des forfaits Internet (Data)",
+                    "Amélioration urgente de la couverture 4G dans tous les quartiers",
+                    "Stabilité du réseau pendant les intempéries / pluies à Uvira",
+                    "Possibilité d'accumuler / reporter les mégas expirés non consommés",
+                    "Meilleure assistance et réactivité du service client local",
+                    "Déploiement de la Fibre optique et de réseaux Wifi publics accessibles"
+                ];
+
+                // FORM STATE
+                const formData = ref({
+                    commune: '',
+                    quartier: '',
+                    operators: [],
+                    profile: 'Particulier',
+                    networkType: '4G',
+                    outageFrequency: 'Plusieurs fois par jour',
+                    ratings: {
+                        pageLoading: 2,
+                        streaming: 2,
+                        calls: 3,
+                        weatherStability: 1
+                    },
+                    monthlyBudget: '5$ - 15$',
+                    priceFairness: 'Extrêmement cher pour la mauvaise qualité offerte',
+                    bundleType: 'Forfaits Jour (24h)',
+                    claims: [],
+                    userMessage: ''
+                });
+
+                // RESPONSES DATABASE (Local Storage + Initial Mock Data)
+                const surveyResponses = ref([]);
+
+                const defaultMockData = [
+                    { commune: 'Mulongwe', quartier: 'Kasenga', operators: ['Airtel', 'Vodacom'], outageFrequency: 'Plusieurs fois par jour', ratings: { pageLoading: 2 }, claims: ['Baisse générale du prix des forfaits Internet (Data)', 'Stabilité du réseau pendant les intempéries / pluies à Uvira'], message: 'La 4G s’interrompt dès qu’il y a une petite averse à Kasenga.', date: 'Il y a 2h' },
+                    { commune: 'Kalundu', quartier: 'Kimanga', operators: ['Vodacom'], outageFrequency: 'Plusieurs fois par jour', ratings: { pageLoading: 1 }, claims: ['Amélioration urgente de la couverture 4G dans tous les quartiers'], message: 'Impossible de faire un appel vidéo WhatsApp sans coupures.', date: 'Il y a 5h' },
+                    { commune: 'Kavimvira', quartier: 'Kavimvira', operators: ['Airtel', 'Orange'], outageFrequency: 'Une fois par jour', ratings: { pageLoading: 3 }, claims: ['Possibilité d\'accumuler / reporter les mégas expirés non consommés'], message: 'Les forfaits expairent trop vite sans qu’on utilise tous nos mégas.', date: 'Hier' }
+                ];
+
+                onMounted(() => {
+                    const saved = localStorage.getItem('uvira_survey_data');
+                    if (saved) {
+                        try {
+                            surveyResponses.value = JSON.parse(saved);
+                        } catch (e) {
+                            surveyResponses.value = defaultMockData;
+                        }
+                    } else {
+                        surveyResponses.value = defaultMockData;
+                    }
+                });
+
+                // COMPUTED
+                const availableQuartiers = computed(() => {
+                    if (!formData.value.commune) return [];
+                    return communesData[formData.value.commune] || [];
+                });
+
+                const totalResponses = computed(() => surveyResponses.value.length);
+
+                const averageSatisfaction = computed(() => {
+                    if (totalResponses.value === 0) return '2.5';
+                    const sum = surveyResponses.value.reduce((acc, r) => acc + (r.ratings?.pageLoading || 2), 0);
+                    return (sum / totalResponses.value).toFixed(1);
+                });
+
+                const dailyOutagePercent = computed(() => {
+                    if (totalResponses.value === 0) return '0';
+                    const daily = surveyResponses.value.filter(r => r.outageFrequency === 'Plusieurs fois par jour' || r.outageFrequency === 'Une fois par jour').length;
+                    return Math.round((daily / totalResponses.value) * 100);
+                });
+
+                const recentMessages = computed(() => {
+                    return surveyResponses.value
+                        .filter(r => r.message)
+                        .slice(-5)
+                        .reverse();
+                });
+
+                const whatsappShareUrl = computed(() => {
+                    const text = encodeURIComponent("J'ai répondu à l'enquête citoyenne sur la qualité d'Internet à Uvira ! Donne aussi ton avis pour qu'on exige une meilleure connexion dans notre quartier : ");
+                    return `https://api.whatsapp.com/send?text=${text}`;
+                });
+
+                // METHODS
+                const onCommuneChange = () => {
+                    formData.value.quartier = '';
+                };
+
+                const startSurvey = () => {
+                    currentTab.value = 'survey';
+                    surveyStep.value = 1;
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                };
+
+                const goToStep = (step) => {
+                    if (step < surveyStep.value || validateStep(surveyStep.value)) {
+                        surveyStep.value = step;
+                    }
+                };
+
+                const validateStep = (step) => {
+                    if (step === 1) {
+                        if (!formData.value.commune || !formData.value.quartier) {
+                            alert('Veuillez sélectionner votre Commune et votre Quartier.');
+                            return false;
+                        }
+                        if (formData.value.operators.length === 0) {
+                            alert('Veuillez choisir au moins un opérateur.');
+                            return false;
+                        }
+                    }
+                    return true;
+                };
+
+                const nextStep = () => {
+                    if (validateStep(surveyStep.value)) {
+                        surveyStep.value++;
+                    }
+                };
+
+                const submitSurvey = () => {
+                    const newEntry = {
+                        commune: formData.value.commune,
+                        quartier: formData.value.quartier,
+                        operators: [...formData.value.operators],
+                        profile: formData.value.profile,
+                        networkType: formData.value.networkType,
+                        outageFrequency: formData.value.outageFrequency,
+                        ratings: { ...formData.value.ratings },
+                        monthlyBudget: formData.value.monthlyBudget,
+                        priceFairness: formData.value.priceFairness,
+                        bundleType: formData.value.bundleType,
+                        claims: [...formData.value.claims],
+                        message: formData.value.userMessage,
+                        date: 'À l\'instant'
+                    };
+
+                    surveyResponses.value.push(newEntry);
+                    localStorage.setItem('uvira_survey_data', JSON.stringify(surveyResponses.value));
+
+                    showSuccessModal.value = true;
+                };
+
+                const closeModal = () => {
+                    showSuccessModal.value = false;
+                    currentTab.value = 'stats';
+                    nextTick(() => {
+                        renderCharts();
+                    });
+                };
+
+                // CHARTS RENDERING
+                let chart1 = null, chart2 = null, chart3 = null;
+
+                const renderCharts = () => {
+                    const ctx1 = document.getElementById('chartQuartiers');
+                    const ctx2 = document.getElementById('chartOutages');
+                    const ctx3 = document.getElementById('chartClaims');
+
+                    if (!ctx1 || !ctx2 || !ctx3) return;
+
+                    if (chart1) chart1.destroy();
+                    if (chart2) chart2.destroy();
+                    if (chart3) chart3.destroy();
+
+                    // Aggregating Quartiers Data
+                    const quartierCounts = {};
+                    Object.values(communesData).flat().forEach(q => quartierCounts[q.name] = 0);
+                    surveyResponses.value.forEach(r => {
+                        if (quartierCounts[r.quartier] !== undefined) quartierCounts[r.quartier]++;
+                    });
+
+                    chart1 = new Chart(ctx1, {
+                        type: 'bar',
+                        data: {
+                            labels: Object.keys(quartierCounts),
+                            datasets: [{
+                                label: 'Nombre de réponses',
+                                data: Object.values(quartierCounts),
+                                backgroundColor: '#0284c7',
+                                borderRadius: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } }
+                        }
+                    });
+
+                    // Aggregating Outages
+                    const outageCounts = {};
+                    surveyResponses.value.forEach(r => {
+                        outageCounts[r.outageFrequency] = (outageCounts[r.outageFrequency] || 0) + 1;
+                    });
+
+                    chart2 = new Chart(ctx2, {
+                        type: 'doughnut',
+                        data: {
+                            labels: Object.keys(outageCounts),
+                            datasets: [{
+                                data: Object.values(outageCounts),
+                                backgroundColor: ['#f43f5e', '#fb923c', '#facc15', '#38bdf8']
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false
+                        }
+                    });
+
+                    // Aggregating Claims
+                    const claimCounts = {};
+                    claimsList.forEach(c => claimCounts[c] = 0);
+                    surveyResponses.value.forEach(r => {
+                        if (r.claims) {
+                            r.claims.forEach(c => {
+                                if (claimCounts[c] !== undefined) claimCounts[c]++;
+                            });
+                        }
+                    });
+
+                    chart3 = new Chart(ctx3, {
+                        type: 'bar',
+                        data: {
+                            labels: claimsList.map(c => c.substring(0, 30) + '...'),
+                            datasets: [{
+                                label: 'Voix pour cette revendication',
+                                data: Object.values(claimCounts),
+                                backgroundColor: '#f97316',
+                                borderRadius: 6
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } }
+                        }
+                    });
+                };
+
+                watch(currentTab, (newTab) => {
+                    if (newTab === 'stats') {
+                        nextTick(() => {
+                            renderCharts();
+                        });
+                    }
+                });
+
+                return {
+                    currentTab,
+                    mobileMenuOpen,
+                    surveyStep,
+                    stepTitles,
+                    communesData,
+                    availableQuartiers,
+                    operatorsList,
+                    networkTypes,
+                    budgetRanges,
+                    priceOpinionsList,
+                    claimsList,
+                    formData,
+                    totalResponses,
+                    averageSatisfaction,
+                    dailyOutagePercent,
+                    recentMessages,
+                    showSuccessModal,
+                    whatsappShareUrl,
+                    onCommuneChange,
+                    startSurvey,
+                    goToStep,
+                    nextStep,
+                    submitSurvey,
+                    closeModal
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
